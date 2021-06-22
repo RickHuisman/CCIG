@@ -48,9 +48,18 @@ func (p *Parser) parseNumber(token tokenizer.Token) ast.Expression {
 	}
 }
 
-func (p *Parser) parseInfixExpression(token tokenizer.Token, left ast.Expression) ast.Expression {
+func (p *Parser) parsePrefixExpr(token tokenizer.Token) ast.Expression {
+	expr := &ast.PrefixExpr{
+		Operator: ast.LookupBinaryOperator(token.Source),
+		Right: p.parseExpression(Prefix),
+	}
+
+	return expr
+}
+
+func (p *Parser) parseInfixExpr(token tokenizer.Token, left ast.Expression) ast.Expression {
 	expr := &ast.InfixExpr{
-		Operator: token.Source,
+		Operator: ast.LookupBinaryOperator(token.Source),
 		Left:     left,
 	}
 

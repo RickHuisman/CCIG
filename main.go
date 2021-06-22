@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	source := `5 + 10;`
+	source := `10 / 5;`
+	//source := `5 + 10;`
 	run(source)
 }
 

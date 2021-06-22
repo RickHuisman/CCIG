@@ -1,5 +1,28 @@
 package ast
 
+type BinaryOperator string
+
+const (
+	Add      = "+"
+	Subtract = "-"
+	Multiply = "*"
+	Divide   = "/"
+)
+
+var operators = map[string]BinaryOperator{
+	"+": Add,
+	"-": Subtract,
+	"*": Multiply,
+	"/": Divide,
+}
+
+func LookupBinaryOperator(operator string) BinaryOperator {
+	if op, ok := operators[operator]; ok {
+		return op
+	}
+	panic("TODO") // TODO
+}
+
 type Node interface {
 }
 
@@ -53,8 +76,13 @@ type NumberExpr struct {
 	Value float64
 }
 
+type PrefixExpr struct {
+	Operator BinaryOperator
+	Right    Expression
+}
+
 type InfixExpr struct {
-	Operator string
+	Operator BinaryOperator
 	Left     Expression
 	Right    Expression
 }
@@ -67,5 +95,6 @@ type CallExpr struct {
 func (*IdentifierExpr) expressionNode() {}
 func (*NullExpr) expressionNode()       {}
 func (*NumberExpr) expressionNode()     {}
+func (*PrefixExpr) expressionNode()     {}
 func (*InfixExpr) expressionNode()      {}
 func (*CallExpr) expressionNode()       {}
