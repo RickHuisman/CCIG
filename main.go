@@ -7,8 +7,11 @@ import (
 )
 
 func main() {
-	source := `10 / 5;`
+	source := `var a = 10;`
 	//source := `5 + 10;`
+	//source := `
+	//var x = 10;
+	//var y = x;`
 	run(source)
 }
 

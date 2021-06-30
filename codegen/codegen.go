@@ -8,18 +8,27 @@ import (
 func GenerateAsm(ast []ast.Node) {
 	fmt.Println("section .text")
 	fmt.Println("global _main")
-	fmt.Println("_main")
+	fmt.Println("_main:")
+
+	fmt.Println("  push rbp");
+	fmt.Println("  mov rbp, rsp");
+	fmt.Println("  sub rsp, 208");
 
 	for _, node := range ast {
 		generate(node)
+
+		fmt.Println("  pop rax")
 	}
 
-	fmt.Println("  pop rax")
+	fmt.Println("  mov rsp, rbp")
+	fmt.Println("  pop rbp")
 	fmt.Println("  ret")
 }
 
 func generate(node ast.Node) {
 	switch node.(type) {
+	case *ast.VarStatement:
+		generateVarAssign(node.(*ast.VarStatement))
 	case *ast.NumberExpr:
 		generateNumber(node.(*ast.NumberExpr))
 	case *ast.PrefixExpr:
@@ -31,6 +40,28 @@ func generate(node ast.Node) {
 	default:
 		panic("TODO")
 	}
+}
+
+func generateVarAssign(stmt *ast.VarStatement) {
+	//generateAddr(stmt)
+
+	fmt.Println("  mov rax, rbp")
+	fmt.Printf("  sub rax, %d\n", getOffset(rune(stmt.Name[0])))
+	fmt.Println("  push rax")
+
+	fmt.Println("  pop rax")
+	fmt.Println("  mov rax, [rax]")
+	fmt.Println("  push rax")
+
+	fmt.Println("")
+
+	generate(stmt.Initializer)
+
+	fmt.Println("  pop rdi")
+	fmt.Println("  pop rax")
+	fmt.Println("  push rax") // TODO?
+
+	fmt.Println("")
 }
 
 func generateNumber(number *ast.NumberExpr) {
@@ -78,4 +109,14 @@ func generateBinaryOperator(operator ast.BinaryOperator) {
 	default:
 		panic("TODO")
 	}
+}
+
+func generateAddr(stmt *ast.VarStatement) {
+	r := []rune(stmt.Name)
+	offset := getOffset(r[0])
+	fmt.Printf("  lea rbp[%d], rax\n", -offset)
+}
+
+func getOffset(r rune) int {
+	return int((r - 'a' + 1) * 8)
 }

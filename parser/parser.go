@@ -40,6 +40,7 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 	p := Parser{tokens: tokens}
 
 	p.prefixParseFns = make(map[tokenizer.TokenType]prefixParseFn)
+	p.registerPrefix(tokenizer.Identifier, p.parseIdentifier)
 	p.registerPrefix(tokenizer.Number, p.parseNumber)
 	p.registerPrefix(tokenizer.Minus, p.parsePrefixExpr)
 
