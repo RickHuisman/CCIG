@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    source := `10 * 2;`
+    source := `10 / 3;`
 	//source := `var a = 10;`
 	//source := `5 + 10;`
 	//source := `

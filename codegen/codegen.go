@@ -16,18 +16,12 @@ func GenerateAsm(ast []ast.Node) string {
 	c.emitInstruction("global _main")
     c.emitInstruction("_main:")
 
-    c.emitInstruction("  push rbp")
-    c.emitInstruction("  mov rbp, rsp")
-    c.emitInstruction("  sub rsp, 208")
-
 	for _, node := range ast {
 		c.generate(node)
 
         c.emitInstruction("  pop rax")
 	}
 
-    c.emitInstruction("  mov rsp, rbp")
-    c.emitInstruction("  pop rbp")
 	c.emitInstruction("  ret")
     return c.asm
 }
@@ -118,6 +112,7 @@ func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 	case ast.Divide: // FIXME
         c.emitInstruction("  cqo")
         c.emitInstruction("  idiv rdi")
+        c.emitInstruction("  mov rax, rdx")
 	default:
 		panic("TODO")
 	}
