@@ -1,13 +1,15 @@
 package main
 
 import (
+    "os"
 	"CCIG/codegen"
 	"CCIG/parser"
 	"CCIG/tokenizer"
 )
 
 func main() {
-	source := `var a = 10;`
+    source := `10 * 2;`
+	//source := `var a = 10;`
 	//source := `5 + 10;`
 	//source := `
 	//var x = 10;
@@ -22,5 +24,14 @@ func run(source string) {
 	p := parser.NewParser(tokens)
 	ast := p.Parse()
 
-	codegen.GenerateAsm(ast)
+    asm := codegen.GenerateAsm(ast)
+    writeAsm(asm)
+}
+
+func writeAsm(asm string) {
+    f, err := os.Create("temp.asm")
+    if err != nil {
+        panic(err)
+    }
+    f.WriteString(asm)
 }
