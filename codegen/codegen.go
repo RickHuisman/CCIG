@@ -16,12 +16,20 @@ func GenerateAsm(ast []ast.Node) string {
 	c.emitInstruction("global _main")
     c.emitInstruction("_main:")
 
+	c.emitInstruction("  ; prologue")
+	c.emitInstruction("  push rbp")
+	c.emitInstruction("  mov rbp, rsp")
+	c.emitInstruction("  sub rsp, 208")
+	c.emitInstruction("")
+
 	for _, node := range ast {
 		c.generate(node)
 
         c.emitInstruction("  pop rax")
 	}
 
+	c.emitInstruction("  mov rsp, rbp")
+	c.emitInstruction("  pop rbp")
 	c.emitInstruction("  ret")
     return c.asm
 }
@@ -34,39 +42,35 @@ func (c *Compiler) generate(node ast.Node) {
 	switch node.(type) {
 	case *ast.VarStatement:
 		c.generateVarAssign(node.(*ast.VarStatement))
+	case *ast.ExprStatement:
+		c.generateExprStatement(node.(*ast.ExprStatement))
 	case *ast.NumberExpr:
 		c.generateNumber(node.(*ast.NumberExpr))
 	case *ast.PrefixExpr:
 		c.generatePrefixExpr(node.(*ast.PrefixExpr))
 	case *ast.InfixExpr:
 		c.generateInfixExpr(node.(*ast.InfixExpr))
-	case *ast.ExprStatement:
-		c.generateExprStatement(node.(*ast.ExprStatement))
+	case *ast.IdentifierExpr:
+		c.generateIdentifierExpr(node.(*ast.IdentifierExpr))
 	default:
 		panic("TODO")
 	}
+	c.emitInstruction("  ;-----")
 }
 
 func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
-	//generateAddr(stmt)
-
-	c.emitInstruction("  mov, rax, rbp")
-	c.emitInstruction(fmt.Sprintf("  sub rax, %d\n", getOffset(rune(stmt.Name[0]))))
-	c.emitInstruction("  push rax")
-
-	c.emitInstruction("  pop rax")
-	c.emitInstruction("  mov rax, [rax]")
-	c.emitInstruction("  push rax")
-
-    c.emitInstruction("")
+	c.generateOffset(stmt.Name)
 
 	c.generate(stmt.Initializer)
 
-    c.emitInstruction("  pop rdi")
-    c.emitInstruction("  pop rax")
-    c.emitInstruction("  push rax") // TODO ?
+	c.emitInstruction("  pop rdi")
+	c.emitInstruction("  pop rax")
+	c.emitInstruction("  mov [rax], rdi")
+	c.emitInstruction("  push rdi")
+}
 
-    c.emitInstruction("")
+func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
+	c.generate(statement.Value)
 }
 
 func (c *Compiler) generateNumber(number *ast.NumberExpr) {
@@ -86,8 +90,8 @@ func (c *Compiler) generatePrefixExpr(expr *ast.PrefixExpr) {
 }
 
 func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
-	c.generate(expr.Right)
 	c.generate(expr.Left)
+	c.generate(expr.Right)
 
     c.emitInstruction("  pop rdi")
     c.emitInstruction("  pop rax")
@@ -97,31 +101,37 @@ func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
     c.emitInstruction("  push rax")
 }
 
-func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
-	c.generate(statement.Value)
+func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
+	c.generateOffset(expr.Value)
+	c.emitInstruction("  pop rax")
+	c.emitInstruction("  mov rax, [rax]")
+	c.emitInstruction("  push rax")
 }
 
 func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 	switch operator {
 	case ast.Add:
         c.emitInstruction("  add rax, rdi")
-	case ast.Subtract: // FIXME
+	case ast.Subtract:
         c.emitInstruction("  sub rax, rdi")
 	case ast.Multiply:
         c.emitInstruction("  imul rax, rdi")
-	case ast.Divide: // FIXME
+	case ast.Divide:
         c.emitInstruction("  cqo")
         c.emitInstruction("  idiv rdi")
-        c.emitInstruction("  mov rax, rdx")
+        c.emitInstruction("  mov rax, rdx") // TODO Works?
 	default:
 		panic("TODO")
 	}
 }
 
-func generateAddr(stmt *ast.VarStatement) {
-	r := []rune(stmt.Name)
+func (c *Compiler) generateOffset(arg string) {
+	r := []rune(arg)
 	offset := getOffset(r[0])
-	fmt.Printf("  lea rbp[%d], rax\n", -offset) // TODO
+
+	c.emitInstruction("  mov rax, rbp")
+	c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
+	c.emitInstruction("  push rax")
 }
 
 func getOffset(r rune) int {

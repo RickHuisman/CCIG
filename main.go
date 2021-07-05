@@ -1,19 +1,15 @@
 package main
 
 import (
-    "os"
 	"CCIG/codegen"
 	"CCIG/parser"
 	"CCIG/tokenizer"
+	"os"
+	"os/exec"
 )
 
 func main() {
-    source := `10 / 3;`
-	//source := `var a = 10;`
-	//source := `5 + 10;`
-	//source := `
-	//var x = 10;
-	//var y = x;`
+	source := `var b = 5; var c = b + 10; c + b;`
 	run(source)
 }
 
@@ -26,6 +22,7 @@ func run(source string) {
 
     asm := codegen.GenerateAsm(ast)
     writeAsm(asm)
+    buildAndLink()
 }
 
 func writeAsm(asm string) {
@@ -33,5 +30,24 @@ func writeAsm(asm string) {
     if err != nil {
         panic(err)
     }
-    f.WriteString(asm)
+	_, err = f.WriteString(asm)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func buildAndLink() {
+	cmd := exec.Command("nasm", "-f", "macho64", "temp.asm")
+	err := cmd.Run()
+
+	if err != nil {
+		panic(err)
+	}
+
+	cmd2 := exec.Command("gcc", "-arch", "x86_64", "-o", "temp", "temp.o")
+	err2 := cmd2.Run()
+
+	if err2 != nil {
+		panic(err2)
+	}
 }
