@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	source := `var b = 5; var c = b + 10; c + b;`
+	source := `var foo = 5; 5 + foo;`
 	run(source)
 }
 
@@ -18,9 +18,9 @@ func run(source string) {
 	tokens := t.Tokenize()
 
 	p := parser.NewParser(tokens)
-	ast := p.Parse()
+	prog := p.Parse()
 
-    asm := codegen.GenerateAsm(ast)
+    asm := codegen.GenerateAsm(prog)
     writeAsm(asm)
     buildAndLink()
 }

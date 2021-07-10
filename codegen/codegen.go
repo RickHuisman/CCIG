@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"CCIG/ast"
+	"CCIG/parser"
 	"fmt"
 )
 
@@ -9,7 +10,7 @@ type Compiler struct {
     asm string
 }
 
-func GenerateAsm(ast []ast.Node) string {
+func GenerateAsm(prog parser.Function) string {
     c := Compiler { asm: "" }
 
 	c.emitInstruction("section .text")
@@ -19,10 +20,10 @@ func GenerateAsm(ast []ast.Node) string {
 	c.emitInstruction("  ; prologue")
 	c.emitInstruction("  push rbp")
 	c.emitInstruction("  mov rbp, rsp")
-	c.emitInstruction("  sub rsp, 208")
+	c.emitInstruction(fmt.Sprintf("  sub rsp, %d", prog.StackSize)) // TODO
 	c.emitInstruction("")
 
-	for _, node := range ast {
+	for _, node := range prog.Body {
 		c.generate(node)
 
         c.emitInstruction("  pop rax")
@@ -59,7 +60,7 @@ func (c *Compiler) generate(node ast.Node) {
 }
 
 func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
-	c.generateOffset(stmt.Name)
+	c.generateOffset(stmt)
 
 	c.generate(stmt.Initializer)
 
@@ -102,7 +103,7 @@ func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
 }
 
 func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
-	c.generateOffset(expr.Value)
+	c.generateOffset(expr)
 	c.emitInstruction("  pop rax")
 	c.emitInstruction("  mov rax, [rax]")
 	c.emitInstruction("  push rax")
@@ -125,15 +126,23 @@ func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 	}
 }
 
-func (c *Compiler) generateOffset(arg string) {
-	r := []rune(arg)
-	offset := getOffset(r[0])
+func (c *Compiler) generateOffset(node ast.Node) {
+	// TODO FIX
+	if _, ok := node.(*ast.VarStatement); ok {
+		offset := node.(*ast.VarStatement).Offset
 
-	c.emitInstruction("  mov rax, rbp")
-	c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
-	c.emitInstruction("  push rax")
-}
+		c.emitInstruction("  mov rax, rbp")
+		c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
+		c.emitInstruction("  push rax")
+		return
+	}
+	if _, ok := node.(*ast.IdentifierExpr); ok {
+		offset := node.(*ast.IdentifierExpr).Offset
 
-func getOffset(r rune) int {
-	return int((r - 'a' + 1) * 8)
+		c.emitInstruction("  mov rax, rbp")
+		c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
+		c.emitInstruction("  push rax")
+		return
+	}
+	panic("TODO")
 }

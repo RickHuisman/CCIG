@@ -91,3 +91,22 @@ func TestMultiplication(t *testing.T) {
         }
     }
 }
+
+func TestLocal(t *testing.T) {
+    var tests = []struct {
+        expr string
+        want int
+    }{
+        {"var foo = 5; foo + 10;", 15},
+        {"var foo = 5; var bar = 10; foo + bar;", 15},
+    }
+
+    for _, test := range tests {
+        run(test.expr)
+        got := getStatusCode()
+
+        if got != test.want {
+            t.Errorf("got = %d; want %d", got, test.want)
+        }
+    }
+}

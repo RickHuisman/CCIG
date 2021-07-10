@@ -17,6 +17,18 @@ const (
 	Index         // array[index]
 )
 
+type Function struct {
+	Body      []ast.Node
+	//Locals    []Local
+	StackSize int
+}
+
+// Local variable
+type Local struct {
+	name   string
+	offset int
+}
+
 var precedences = map[tokenizer.TokenType]int{
 	tokenizer.Equal:    Assignment,
 	tokenizer.Plus:     Sum,
@@ -53,12 +65,17 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 	return &p
 }
 
-func (p *Parser) Parse() []ast.Node {
+func (p *Parser) Parse() Function {
 	var stmts []ast.Node
 	for p.hasNext() {
 		stmts = append(stmts, p.statement())
 	}
-	return stmts
+	stackSize := assignOffsets(stmts)
+
+	return Function{
+		Body: stmts,
+		StackSize: stackSize,
+	}
 }
 
 func (p *Parser) statement() ast.Statement {

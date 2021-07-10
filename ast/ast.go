@@ -34,6 +34,7 @@ type Statement interface {
 type VarStatement struct {
 	Name        string
 	Initializer Expression
+	Offset      int
 }
 
 type BlockStatement struct {
@@ -66,7 +67,8 @@ type Expression interface {
 }
 
 type IdentifierExpr struct {
-	Value string
+	Value  string
+	Offset int
 }
 
 type NullExpr struct {
