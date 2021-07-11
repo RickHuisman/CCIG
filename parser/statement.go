@@ -73,6 +73,8 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		}
 	}
 
+	p.expect(tokenizer.RightBrace, "TODO") // TODO
+
 	return &ast.BlockStatement{Statements: statements}
 }
 
@@ -88,13 +90,19 @@ func (p *Parser) parseReturn() ast.Statement {
 
 func (p *Parser) parseIf() ast.Statement {
 	p.expect(tokenizer.LeftParen, "Expect '(' before if condition.")
-	stmt := &ast.IfStatement{
+	stmt := &ast.IfElseStatement{
 		Condition: p.parseExpression(None),
 	}
 	p.expect(tokenizer.RightParen, "Expect ')' after if condition.")
 
 	p.expect(tokenizer.LeftBrace, "TODO") // TODO
 	stmt.Then = p.parseBlockStatement()
+
+	if p.match(tokenizer.Else) {
+		p.expect(tokenizer.LeftBrace, "TODO") // TODO
+
+		stmt.Else = p.parseBlockStatement()
+	}
 
 	return stmt
 }

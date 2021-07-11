@@ -85,9 +85,10 @@ type ExprStatement struct {
 	Value Expression
 }
 
-type IfStatement struct {
+type IfElseStatement struct {
 	Condition Expression
 	Then      Statement // TODO BlockStatement
+	Else      Statement
 }
 
 func (*VarStatement) statementNode()    {}
@@ -95,7 +96,7 @@ func (*BlockStatement) statementNode()  {}
 func (*FunStatement) statementNode()    {}
 func (*ReturnStatement) statementNode() {}
 func (*ExprStatement) statementNode()   {}
-func (*IfStatement) statementNode()     {}
+func (*IfElseStatement) statementNode() {}
 
 type Expression interface {
 	Node

@@ -7,11 +7,15 @@ import (
 )
 
 type Compiler struct {
-	asm string
+	ifElseCount int
+	asm         string
 }
 
 func GenerateAsm(prog parser.Function) string {
-	c := Compiler{asm: ""}
+	c := Compiler{
+		ifElseCount: 0,
+		asm:         "",
+	}
 
 	c.emitInstruction("section .text")
 	c.emitInstruction("global _main")
@@ -56,6 +60,10 @@ func (c *Compiler) generate(node ast.Node) {
 		c.generateInfixExpr(node.(*ast.InfixExpr))
 	case *ast.IdentifierExpr:
 		c.generateIdentifierExpr(node.(*ast.IdentifierExpr))
+	case *ast.BlockStatement:
+		c.generateBlockStatement(node.(*ast.BlockStatement))
+	case *ast.IfElseStatement:
+		c.generateIfElseStatement(node.(*ast.IfElseStatement))
 	default:
 		panic("TODO")
 	}
@@ -109,11 +117,33 @@ func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
 	c.emitInstruction("  push rax")
 }
 
+func (c *Compiler) generateBlockStatement(expr *ast.BlockStatement) {
+	for _, e := range expr.Statements {
+		c.generate(e)
+	}
+}
+
 func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
 	c.generateOffset(expr)
 	c.emitInstruction("  pop rax")
 	c.emitInstruction("  mov rax, [rax]")
 	c.emitInstruction("  push rax")
+}
+
+func (c *Compiler) generateIfElseStatement(stmt *ast.IfElseStatement) {
+	c.generate(stmt.Condition)
+	c.emitInstruction("  cmp rax, 0")
+
+	c.ifElseCount += 1
+
+	c.emitInstruction(fmt.Sprintf("  je .L.else.%d", c.ifElseCount))
+	c.generate(stmt.Then)
+	c.emitInstruction(fmt.Sprintf("  jmp .L.end.%d", c.ifElseCount))
+	c.emitInstruction(fmt.Sprintf(".L.else.%d:", c.ifElseCount))
+	if stmt.Else != nil {
+		c.generate(stmt.Else)
+	}
+	c.emitInstruction(fmt.Sprintf(".L.end.%d:", c.ifElseCount))
 }
 
 func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {

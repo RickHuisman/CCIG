@@ -9,8 +9,7 @@ import (
 )
 
 func main() {
-	//source := `if (10 == 10) { return 5; }`
-	source := `10 == 10;`
+	source := `if (10 > 10) { return 5; } else { return 3; }`
 	run(source)
 }
 
