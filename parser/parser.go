@@ -20,7 +20,7 @@ const (
 
 type Function struct {
 	Body []ast.Node
-	//Locals    []Local
+	//Locals    []Local TODO
 	StackSize int
 }
 
@@ -81,9 +81,12 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 
 func (p *Parser) Parse() Function {
 	var stmts []ast.Node
-	for p.hasNext() {
+	for !p.check(tokenizer.EOF) {
 		stmts = append(stmts, p.statement())
 	}
+	//for p.hasNext() {
+	//	stmts = append(stmts, p.statement())
+	//}
 	stackSize := assignOffsets(stmts)
 
 	return Function{
