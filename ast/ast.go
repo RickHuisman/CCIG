@@ -1,23 +1,41 @@
 package ast
 
 type BinaryOperator string
+type UnaryOperator string
 
 const (
+	// Binary operators
 	Add      = "+"
 	Subtract = "-"
 	Multiply = "*"
 	Divide   = "/"
+
+	// Unary operators
+	Negate = "-"
+	Not    = "!"
 )
 
-var operators = map[string]BinaryOperator{
+var binaryOperators = map[string]BinaryOperator{
 	"+": Add,
 	"-": Subtract,
 	"*": Multiply,
 	"/": Divide,
 }
 
+var unaryOperators = map[string]UnaryOperator{
+	"-": Negate,
+	"!": Not,
+}
+
 func LookupBinaryOperator(operator string) BinaryOperator {
-	if op, ok := operators[operator]; ok {
+	if op, ok := binaryOperators[operator]; ok {
+		return op
+	}
+	panic("TODO") // TODO
+}
+
+func LookupUnaryOperator(operator string) UnaryOperator {
+	if op, ok := unaryOperators[operator]; ok {
 		return op
 	}
 	panic("TODO") // TODO
@@ -48,7 +66,7 @@ type FunStatement struct {
 }
 
 type ReturnStatement struct {
-	ReturnValue Expression
+	Value Expression
 }
 
 type ExprStatement struct {
@@ -79,7 +97,7 @@ type NumberExpr struct {
 }
 
 type PrefixExpr struct {
-	Operator BinaryOperator
+	Operator UnaryOperator
 	Right    Expression
 }
 

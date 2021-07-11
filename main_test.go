@@ -6,6 +6,11 @@ import (
     "testing"
 )
 
+type TestCase struct {
+    expr string
+    want int
+}
+
 func getStatusCode() int {
     cmd := exec.Command("./temp")
 
@@ -30,83 +35,80 @@ func getStatusCode() int {
     return 0 // TODO
 }
 
-func TestAddition(t *testing.T) {
-    var tests = []struct {
-        expr string
-        want int
-    }{
-        {"100 + 50;", 150},
-        {"-5 + 10;", 5},
-        {"5 + 0;", 5},
-        {"5 + 2 + 3 - 5;", 5},
-    }
-
+func runTestCases(t *testing.T,tests []TestCase) {
     for _, test := range tests {
         run(test.expr)
         got := getStatusCode()
 
         if got != test.want {
-            t.Errorf("got = %d; want %d", got, test.want)
+            t.Errorf("got = %d; want %d, input: %s", got, test.want, test.expr)
         }
     }
+}
+
+func TestAddition(t *testing.T) {
+    var tests = []TestCase {
+        {"return 100 + 50;", 150},
+        {"return -5 + 10;", 5},
+        {"return 5 + 0;", 5},
+        {"return 5 + 2 + 3 - 5;", 5},
+    }
+
+    runTestCases(t, tests)
 }
 
 func TestSubtraction(t *testing.T) {
-    var tests = []struct {
-        expr string
-        want int
-    }{
-        {"100 - 50;", 50},
-        {"5 - 0;", 5},
-        {"5 - 2 - 3 + 5;", 5},
+    var tests = []TestCase {
+        {"return 100 - 50;", 50},
+        {"return 5 - 0;", 5},
+        {"return 5 - 2 - 3 + 5;", 5},
     }
 
-    for _, test := range tests {
-        run(test.expr)
-        got := getStatusCode()
-
-        if got != test.want {
-            t.Errorf("got = %d; want %d", got, test.want)
-        }
-    }
+    runTestCases(t, tests)
 }
 
 func TestMultiplication(t *testing.T) {
-    var tests = []struct {
-        expr string
-        want int
-    }{
-        {"100 * 50;", 5000},
-        {"-5 * -5;", 25},
-        {"5 * 0;", 0},
-        {"5 + 2 * 3;", 11},
+    var tests = []TestCase {
+        {"return 10 * 5;", 50},
+        {"return -5 * -5;", 25},
+        {"return 5 * 0;", 0},
+        {"return 5 + 2 * 3;", 11},
     }
 
-    for _, test := range tests {
-        run(test.expr)
-        got := getStatusCode()
-
-        if got != test.want {
-            t.Errorf("got = %d; want %d", got, test.want)
-        }
-    }
+    runTestCases(t, tests)
 }
 
 func TestLocal(t *testing.T) {
-    var tests = []struct {
-        expr string
-        want int
-    }{
+    var tests = []TestCase {
         {"var foo = 5; foo + 10;", 15},
         {"var foo = 5; var bar = 10; foo + bar;", 15},
     }
 
-    for _, test := range tests {
-        run(test.expr)
-        got := getStatusCode()
-
-        if got != test.want {
-            t.Errorf("got = %d; want %d", got, test.want)
-        }
-    }
+    runTestCases(t, tests)
 }
+
+func TestReturn(t *testing.T) {
+    var tests = []TestCase {
+        {"return 10;", 10},
+    }
+
+    runTestCases(t, tests)
+}
+
+//func TestIfElse(t *testing.T) {
+//    var tests = []struct {
+//        expr string
+//        want int
+//    }{
+//        {"if (10 == 10) { return }", 15},
+//    }
+//
+//    for _, test := range tests {
+//        run(test.expr)
+//        got := getStatusCode()
+//
+//        if got != test.want {
+//            t.Errorf("got = %d; want %d", got, test.want)
+//        }
+//    }
+//}

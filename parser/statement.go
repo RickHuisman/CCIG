@@ -78,11 +78,10 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 func (p *Parser) parseReturn() ast.Statement {
 	stmt := &ast.ReturnStatement{
-		ReturnValue: p.parseExpression(None),
+		Value: p.parseExpression(None),
 	}
 
 	p.expect(tokenizer.Semicolon, "") // TODO Message
-	// TODO Consume '}'?
 
 	return stmt
 }

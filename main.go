@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	source := `var foo = 5; 5 + foo;`
+	source := `return -5;`
 	run(source)
 }
 

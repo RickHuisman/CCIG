@@ -29,6 +29,7 @@ func GenerateAsm(prog parser.Function) string {
         c.emitInstruction("  pop rax")
 	}
 
+	c.emitInstruction(".L.return:");
 	c.emitInstruction("  mov rsp, rbp")
 	c.emitInstruction("  pop rbp")
 	c.emitInstruction("  ret")
@@ -43,6 +44,8 @@ func (c *Compiler) generate(node ast.Node) {
 	switch node.(type) {
 	case *ast.VarStatement:
 		c.generateVarAssign(node.(*ast.VarStatement))
+	case *ast.ReturnStatement:
+		c.generateReturnStatement(node.(*ast.ReturnStatement))
 	case *ast.ExprStatement:
 		c.generateExprStatement(node.(*ast.ExprStatement))
 	case *ast.NumberExpr:
@@ -70,6 +73,12 @@ func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
 	c.emitInstruction("  push rdi")
 }
 
+func (c *Compiler) generateReturnStatement(stmt *ast.ReturnStatement) {
+	c.generate(stmt.Value) // TODO Check for null
+	c.emitInstruction("  pop rax")
+	c.emitInstruction("  jmp .L.return");
+}
+
 func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
 	c.generate(statement.Value)
 }
@@ -79,13 +88,11 @@ func (c *Compiler) generateNumber(number *ast.NumberExpr) {
 }
 
 func (c *Compiler) generatePrefixExpr(expr *ast.PrefixExpr) {
-    c.emitInstruction("  push 0")
 	c.generate(expr.Right)
 
-    c.emitInstruction("  pop rdi")
     c.emitInstruction("  pop rax")
 
-	c.generateBinaryOperator(expr.Operator)
+	c.generateUnaryOperator(expr.Operator)
 
     c.emitInstruction("  push rax")
 }
@@ -121,6 +128,17 @@ func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
         c.emitInstruction("  cqo")
         c.emitInstruction("  idiv rdi")
         c.emitInstruction("  mov rax, rdx") // TODO Works?
+	default:
+		panic("TODO")
+	}
+}
+
+func (c *Compiler) generateUnaryOperator(operator ast.UnaryOperator) {
+	switch operator {
+	case ast.Negate:
+		c.emitInstruction("  neg rax")
+	case ast.Not:
+		panic("TODO")
 	default:
 		panic("TODO")
 	}
