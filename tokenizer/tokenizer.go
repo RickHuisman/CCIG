@@ -36,7 +36,29 @@ func (t *Tokenizer) readToken() Token {
 	var tokenType TokenType
 	switch ch {
 	case '=':
-		tokenType = Equal
+		if t.check('=') {
+			return Token{EqualEqual, "=="}
+		} else {
+			tokenType = Equal
+		}
+	case '!':
+		if t.check('=') {
+			return Token{BangEqual, "!="}
+		} else {
+			tokenType = Bang
+		}
+	case '<':
+		if t.check('=') {
+			return Token{LessThanEqual, "<="}
+		} else {
+			tokenType = Less
+		}
+	case '>':
+		if t.check('=') {
+			return Token{GreaterThanEqual, "<="}
+		} else {
+			tokenType = Greater
+		}
 	case '+':
 		tokenType = Plus
 	case '-':
@@ -47,6 +69,14 @@ func (t *Tokenizer) readToken() Token {
 		tokenType = Slash
 	case ';':
 		tokenType = Semicolon
+	case '(':
+		tokenType = LeftParen
+	case ')':
+		tokenType = RightParen
+	case '{':
+		tokenType = LeftBrace
+	case '}':
+		tokenType = RightBrace
 	default:
 		return newToken(Illegal, ch)
 	}
@@ -118,6 +148,14 @@ func (t *Tokenizer) advanceWhile(condition func() bool) {
 			t.advance()
 		}
 	}()
+}
+
+func (t *Tokenizer) check(ch byte) bool {
+	if t.peek() == ch {
+		t.advance()
+		return true
+	}
+	return false
 }
 
 func (t *Tokenizer) peekNext() byte {

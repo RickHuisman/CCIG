@@ -5,10 +5,16 @@ type UnaryOperator string
 
 const (
 	// Binary operators
-	Add      = "+"
-	Subtract = "-"
-	Multiply = "*"
-	Divide   = "/"
+	Add              = "+"
+	Subtract         = "-"
+	Multiply         = "*"
+	Divide           = "/"
+	EqualEqual       = "=="
+	BangEqual        = "!="
+	LessThanEqual    = "<="
+	GreaterThanEqual = ">="
+	Less             = "<"
+	Greater          = ">"
 
 	// Unary operators
 	Negate = "-"
@@ -16,10 +22,16 @@ const (
 )
 
 var binaryOperators = map[string]BinaryOperator{
-	"+": Add,
-	"-": Subtract,
-	"*": Multiply,
-	"/": Divide,
+	"+":  Add,
+	"-":  Subtract,
+	"*":  Multiply,
+	"/":  Divide,
+	"==": EqualEqual,
+	"!=": BangEqual,
+	"<=": LessThanEqual,
+	">=": GreaterThanEqual,
+	"<":  Less,
+	">":  Greater,
 }
 
 var unaryOperators = map[string]UnaryOperator{
@@ -73,11 +85,17 @@ type ExprStatement struct {
 	Value Expression
 }
 
+type IfStatement struct {
+	Condition Expression
+	Then      Statement // TODO BlockStatement
+}
+
 func (*VarStatement) statementNode()    {}
 func (*BlockStatement) statementNode()  {}
 func (*FunStatement) statementNode()    {}
 func (*ReturnStatement) statementNode() {}
 func (*ExprStatement) statementNode()   {}
+func (*IfStatement) statementNode()     {}
 
 type Expression interface {
 	Node

@@ -21,6 +21,15 @@ const (
 	Minus    = "-"
 	Asterisk = "*"
 	Slash    = "/"
+	Bang     = "!"
+
+	// Logical operators
+	EqualEqual       = "=="
+	BangEqual        = "!="
+	LessThanEqual    = "<="
+	GreaterThanEqual = ">="
+	Less             = "<"
+	Greater          = ">"
 
 	// Delimiters
 	Comma     = ","

@@ -86,6 +86,19 @@ func (p *Parser) parseReturn() ast.Statement {
 	return stmt
 }
 
+func (p *Parser) parseIf() ast.Statement {
+	p.expect(tokenizer.LeftParen, "Expect '(' before if condition.")
+	stmt := &ast.IfStatement{
+		Condition: p.parseExpression(None),
+	}
+	p.expect(tokenizer.RightParen, "Expect ')' after if condition.")
+
+	p.expect(tokenizer.LeftBrace, "TODO") // TODO
+	stmt.Then = p.parseBlockStatement()
+
+	return stmt
+}
+
 func (p *Parser) parseExprStatement() ast.Statement {
 	expr := &ast.ExprStatement{Value: p.parseExpression(Assignment)} // TODO Precedence
 	p.expect(tokenizer.Semicolon, "Expect ';' after expression.")

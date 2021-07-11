@@ -7,15 +7,15 @@ import (
 )
 
 type Compiler struct {
-    asm string
+	asm string
 }
 
 func GenerateAsm(prog parser.Function) string {
-    c := Compiler { asm: "" }
+	c := Compiler{asm: ""}
 
 	c.emitInstruction("section .text")
 	c.emitInstruction("global _main")
-    c.emitInstruction("_main:")
+	c.emitInstruction("_main:")
 
 	c.emitInstruction("  ; prologue")
 	c.emitInstruction("  push rbp")
@@ -26,14 +26,14 @@ func GenerateAsm(prog parser.Function) string {
 	for _, node := range prog.Body {
 		c.generate(node)
 
-        c.emitInstruction("  pop rax")
+		c.emitInstruction("  pop rax")
 	}
 
-	c.emitInstruction(".L.return:");
+	c.emitInstruction(".L.return:")
 	c.emitInstruction("  mov rsp, rbp")
 	c.emitInstruction("  pop rbp")
 	c.emitInstruction("  ret")
-    return c.asm
+	return c.asm
 }
 
 func (c *Compiler) emitInstruction(instruction string) {
@@ -76,7 +76,7 @@ func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
 func (c *Compiler) generateReturnStatement(stmt *ast.ReturnStatement) {
 	c.generate(stmt.Value) // TODO Check for null
 	c.emitInstruction("  pop rax")
-	c.emitInstruction("  jmp .L.return");
+	c.emitInstruction("  jmp .L.return")
 }
 
 func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
@@ -90,23 +90,23 @@ func (c *Compiler) generateNumber(number *ast.NumberExpr) {
 func (c *Compiler) generatePrefixExpr(expr *ast.PrefixExpr) {
 	c.generate(expr.Right)
 
-    c.emitInstruction("  pop rax")
+	c.emitInstruction("  pop rax")
 
 	c.generateUnaryOperator(expr.Operator)
 
-    c.emitInstruction("  push rax")
+	c.emitInstruction("  push rax")
 }
 
 func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
 	c.generate(expr.Left)
 	c.generate(expr.Right)
 
-    c.emitInstruction("  pop rdi")
-    c.emitInstruction("  pop rax")
+	c.emitInstruction("  pop rdi")
+	c.emitInstruction("  pop rax")
 
 	c.generateBinaryOperator(expr.Operator)
 
-    c.emitInstruction("  push rax")
+	c.emitInstruction("  push rax")
 }
 
 func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
@@ -119,15 +119,33 @@ func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
 func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 	switch operator {
 	case ast.Add:
-        c.emitInstruction("  add rax, rdi")
+		c.emitInstruction("  add rax, rdi")
 	case ast.Subtract:
-        c.emitInstruction("  sub rax, rdi")
+		c.emitInstruction("  sub rax, rdi")
 	case ast.Multiply:
-        c.emitInstruction("  imul rax, rdi")
+		c.emitInstruction("  imul rax, rdi")
 	case ast.Divide:
-        c.emitInstruction("  cqo")
-        c.emitInstruction("  idiv rdi")
-        c.emitInstruction("  mov rax, rdx") // TODO Works?
+		c.emitInstruction("  cqo")
+		c.emitInstruction("  idiv rdi")
+		c.emitInstruction("  mov rax, rdx") // TODO Works?
+	case ast.EqualEqual:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  sete al")
+	case ast.BangEqual:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  setne al")
+	case ast.LessThanEqual:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  setle al")
+	case ast.GreaterThanEqual:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  setge al")
+	case ast.Greater:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  setg al")
+	case ast.Less:
+		c.emitInstruction("  cmp rax, rdi")
+		c.emitInstruction("  setl al")
 	default:
 		panic("TODO")
 	}

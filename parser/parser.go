@@ -10,6 +10,7 @@ const (
 	None
 	Assignment    // =
 	LessOrGreater // < or >
+	Equals        // == or !=
 	Sum           // +
 	Product       // *
 	Prefix        // -X or !X
@@ -18,7 +19,7 @@ const (
 )
 
 type Function struct {
-	Body      []ast.Node
+	Body []ast.Node
 	//Locals    []Local
 	StackSize int
 }
@@ -30,11 +31,17 @@ type Local struct {
 }
 
 var precedences = map[tokenizer.TokenType]int{
-	tokenizer.Equal:    Assignment,
-	tokenizer.Plus:     Sum,
-	tokenizer.Minus:    Sum,
-	tokenizer.Slash:    Product,
-	tokenizer.Asterisk: Product,
+	tokenizer.Equal:            Assignment,
+	tokenizer.Plus:             Sum,
+	tokenizer.Minus:            Sum,
+	tokenizer.Slash:            Product,
+	tokenizer.Asterisk:         Product,
+	tokenizer.EqualEqual:       Equals,
+	tokenizer.BangEqual:        Equals,
+	tokenizer.LessThanEqual:    Equals,
+	tokenizer.GreaterThanEqual: Equals,
+	tokenizer.Less:             Equals,
+	tokenizer.Greater:          Equals,
 }
 
 type (
@@ -55,12 +62,19 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 	p.registerPrefix(tokenizer.Identifier, p.parseIdentifier)
 	p.registerPrefix(tokenizer.Number, p.parseNumber)
 	p.registerPrefix(tokenizer.Minus, p.parsePrefixExpr)
+	p.registerPrefix(tokenizer.Bang, p.parsePrefixExpr)
 
 	p.infixParseFns = make(map[tokenizer.TokenType]infixParseFn)
 	p.registerInfix(tokenizer.Plus, p.parseInfixExpr)
 	p.registerInfix(tokenizer.Minus, p.parseInfixExpr)
 	p.registerInfix(tokenizer.Slash, p.parseInfixExpr)
 	p.registerInfix(tokenizer.Asterisk, p.parseInfixExpr)
+	p.registerInfix(tokenizer.EqualEqual, p.parseInfixExpr)
+	p.registerInfix(tokenizer.BangEqual, p.parseInfixExpr)
+	p.registerInfix(tokenizer.LessThanEqual, p.parseInfixExpr)
+	p.registerInfix(tokenizer.GreaterThanEqual, p.parseInfixExpr)
+	p.registerInfix(tokenizer.Less, p.parseInfixExpr)
+	p.registerInfix(tokenizer.Greater, p.parseInfixExpr)
 
 	return &p
 }
@@ -73,7 +87,7 @@ func (p *Parser) Parse() Function {
 	stackSize := assignOffsets(stmts)
 
 	return Function{
-		Body: stmts,
+		Body:      stmts,
 		StackSize: stackSize,
 	}
 }
@@ -89,6 +103,9 @@ func (p *Parser) statement() ast.Statement {
 	case tokenizer.Return:
 		p.consume() // Consume "return"
 		return p.parseReturn()
+	case tokenizer.If:
+		p.consume() // Consume "if"
+		return p.parseIf()
 	default:
 		return p.parseExprStatement()
 	}
@@ -107,7 +124,7 @@ func (p *Parser) expect(tokenType tokenizer.TokenType, message string) tokenizer
 		return p.consume()
 	}
 	// TODO Throw exception
-	panic("TODO") // TODO
+	panic(message) // TODO
 }
 
 func (p *Parser) consume() tokenizer.Token {

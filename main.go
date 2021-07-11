@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	source := `return -5;`
+	//source := `if (10 == 10) { return 5; }`
+	source := `10 == 10;`
 	run(source)
 }
 
@@ -20,16 +21,16 @@ func run(source string) {
 	p := parser.NewParser(tokens)
 	prog := p.Parse()
 
-    asm := codegen.GenerateAsm(prog)
-    writeAsm(asm)
-    buildAndLink()
+	asm := codegen.GenerateAsm(prog)
+	writeAsm(asm)
+	buildAndLink()
 }
 
 func writeAsm(asm string) {
-    f, err := os.Create("temp.asm")
-    if err != nil {
-        panic(err)
-    }
+	f, err := os.Create("temp.asm")
+	if err != nil {
+		panic(err)
+	}
 	_, err = f.WriteString(asm)
 	if err != nil {
 		panic(err)

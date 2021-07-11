@@ -51,7 +51,7 @@ func (p *Parser) parseNumber(token tokenizer.Token) ast.Expression {
 func (p *Parser) parsePrefixExpr(token tokenizer.Token) ast.Expression {
 	expr := &ast.PrefixExpr{
 		Operator: ast.LookupUnaryOperator(token.Source),
-		Right: p.parseExpression(Prefix),
+		Right:    p.parseExpression(Prefix),
 	}
 
 	return expr
