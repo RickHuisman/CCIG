@@ -11,34 +11,29 @@ type TestCase struct {
 	want int
 }
 
-func getStatusCode() int {
+func getStatusCode(t *testing.T) int {
 	cmd := exec.Command("./temp")
 
 	if err := cmd.Start(); err != nil {
-		// t.Errorf("Abs(-1) = %d; want 1", err)
-		// log.Fatalf("cmd.Start: %v", err)
+		t.Errorf("cmd.Start: %v", err)
 	}
 
 	if err := cmd.Wait(); err != nil {
 		if exiterr, ok := err.(*exec.ExitError); ok {
-			// The program has exited with an exit code != 0
-
 			if status, ok := exiterr.Sys().(syscall.WaitStatus); ok {
 				return status.ExitStatus()
-				// t.Errorf("Exit Status: %d", status.ExitStatus())
 			}
 		} else {
-			// t.Errorf("cmd.Wait: %v", err)
+			t.Errorf("cmd.Wait: %v", err)
 		}
 	}
-	// t.Errorf("cmd.Wait: %v", err)
-	return 0 // TODO
+	panic("TODO")
 }
 
 func runTestCases(t *testing.T, tests []TestCase) {
 	for _, test := range tests {
 		run(test.expr)
-		got := getStatusCode()
+		got := getStatusCode(t)
 
 		if got != test.want {
 			t.Errorf("got = %d; want %d, input: %s", got, test.want, test.expr)
@@ -113,6 +108,10 @@ func TestReturn(t *testing.T) {
 func TestIfElse(t *testing.T) {
 	var tests = []TestCase{
 		{"if (10 == 10) { return 5; }", 5},
+		{"if (10 != 10) { return 5; } else { return 3; } ", 3},
+		{"var x = 5; if (5 < 10) { return 5; }", 5},
+		// Test for multiple if statements
+		{"if (5 < 10) { } if (10 > 5) { return 3; }", 3},
 	}
 
 	runTestCases(t, tests)

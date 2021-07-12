@@ -29,6 +29,16 @@ func (g *OffsetGenerator) assignOffset(node ast.Node) {
 	case *ast.ReturnStatement:
 		r := node.(*ast.ReturnStatement)
 		g.assignOffset(r.Value)
+	case *ast.IfElseStatement:
+		i := node.(*ast.IfElseStatement)
+		g.assignOffset(i.Condition)
+		g.assignOffset(i.Then)
+		g.assignOffset(i.Else)
+	case *ast.BlockStatement:
+		b := node.(*ast.BlockStatement)
+		for _, stmt := range b.Statements {
+			g.assignOffset(stmt)
+		}
 	case *ast.ExprStatement:
 		e := node.(*ast.ExprStatement)
 		g.assignOffset(e.Value)
@@ -42,6 +52,10 @@ func (g *OffsetGenerator) assignOffset(node ast.Node) {
 	case *ast.IdentifierExpr:
 		s := node.(*ast.IdentifierExpr)
 		s.Offset = findVar(g.knownVars, s.Value).Offset
+	case *ast.NumberExpr:
+		return
+	default:
+		panic("TODO") // TODO
 	}
 }
 

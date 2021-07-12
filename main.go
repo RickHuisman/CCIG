@@ -11,11 +11,16 @@ import (
 func main() {
 	//source := `if (10 > 10) { return 5; } else { return 3; }`
 	source := `
-	if (10 != 10) {
-		return 5;
+	var x = 10;
+	if (x == 10) {
+		return x;
 	} else {
 		return 3;
 	}`
+//	source := `
+//	var x = 9;
+//	return x == 10;
+//`
 	run(source)
 }
 
