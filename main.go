@@ -9,18 +9,10 @@ import (
 )
 
 func main() {
-	//source := `if (10 > 10) { return 5; } else { return 3; }`
 	source := `
-	var x = 10;
-	if (x == 10) {
-		return x;
-	} else {
-		return 3;
-	}`
-//	source := `
-//	var x = 9;
-//	return x == 10;
-//`
+fn ret3() { return 3; }
+fn ret5() { return 5; }
+return ret3() + ret5();`
 	run(source)
 }
 
@@ -29,9 +21,10 @@ func run(source string) {
 	tokens := t.Tokenize()
 
 	p := parser.NewParser(tokens)
-	prog := p.Parse()
+	program := p.Parse()
+	program.Name = "_main"
 
-	asm := codegen.GenerateAsm(prog)
+	asm := codegen.GenerateAsm(program)
 	writeAsm(asm)
 	buildAndLink()
 }

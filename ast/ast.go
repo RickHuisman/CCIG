@@ -43,14 +43,14 @@ func LookupBinaryOperator(operator string) BinaryOperator {
 	if op, ok := binaryOperators[operator]; ok {
 		return op
 	}
-	panic("TODO") // TODO
+	panic(operator + " is no binary operator.")
 }
 
 func LookupUnaryOperator(operator string) UnaryOperator {
 	if op, ok := unaryOperators[operator]; ok {
 		return op
 	}
-	panic("TODO") // TODO
+	panic(operator + " is no unary operator.")
 }
 
 type Node interface {
@@ -87,8 +87,8 @@ type ExprStatement struct {
 
 type IfElseStatement struct {
 	Condition Expression
-	Then      Statement // TODO BlockStatement
-	Else      Statement
+	Then      *BlockStatement
+	Else      *BlockStatement
 }
 
 func (*VarStatement) statementNode()    {}
@@ -127,7 +127,7 @@ type InfixExpr struct {
 }
 
 type CallExpr struct {
-	Function Expression
+	Function string
 	Args     []Expression
 }
 

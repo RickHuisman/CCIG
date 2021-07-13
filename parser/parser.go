@@ -3,6 +3,8 @@ package parser
 import (
 	"CCIG/ast"
 	"CCIG/tokenizer"
+	"fmt"
+	"os"
 )
 
 const (
@@ -19,16 +21,17 @@ const (
 )
 
 type Function struct {
-	Body []ast.Node
+	Name string
+	Body *ast.BlockStatement
 	//Locals    []Local TODO
 	StackSize int
 }
 
-// Local variable
-type Local struct {
-	name   string
-	offset int
-}
+//// Local variable
+//type Local struct {
+//	name   string
+//	offset int
+//}
 
 var precedences = map[tokenizer.TokenType]int{
 	tokenizer.Equal:            Assignment,
@@ -42,6 +45,7 @@ var precedences = map[tokenizer.TokenType]int{
 	tokenizer.GreaterThanEqual: Equals,
 	tokenizer.Less:             Equals,
 	tokenizer.Greater:          Equals,
+	tokenizer.LeftParen:        Call,
 }
 
 type (
@@ -65,6 +69,7 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 	p.registerPrefix(tokenizer.Bang, p.parsePrefixExpr)
 
 	p.infixParseFns = make(map[tokenizer.TokenType]infixParseFn)
+	p.registerInfix(tokenizer.LeftParen, p.parseCallExpression)
 	p.registerInfix(tokenizer.Plus, p.parseInfixExpr)
 	p.registerInfix(tokenizer.Minus, p.parseInfixExpr)
 	p.registerInfix(tokenizer.Slash, p.parseInfixExpr)
@@ -80,17 +85,14 @@ func NewParser(tokens []tokenizer.Token) *Parser {
 }
 
 func (p *Parser) Parse() Function {
-	var stmts []ast.Node
+	var stmts []ast.Statement
 	for !p.check(tokenizer.EOF) {
 		stmts = append(stmts, p.statement())
 	}
-	//for p.hasNext() {
-	//	stmts = append(stmts, p.statement())
-	//}
 	stackSize := assignOffsets(stmts)
 
 	return Function{
-		Body:      stmts,
+		Body:      &ast.BlockStatement{Statements: stmts},
 		StackSize: stackSize,
 	}
 }
@@ -126,8 +128,13 @@ func (p *Parser) expect(tokenType tokenizer.TokenType, message string) tokenizer
 	if p.check(tokenType) {
 		return p.consume()
 	}
-	// TODO Throw exception
-	panic(message) // TODO
+	reportError(message)
+	return p.tokens[0] // TODO
+}
+
+func reportError(error string) {
+	fmt.Println(error)
+	os.Exit(0)
 }
 
 func (p *Parser) consume() tokenizer.Token {

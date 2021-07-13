@@ -8,40 +8,36 @@ import (
 
 type Compiler struct {
 	ifElseCount int
-	asm         string
+	currentFn   parser.Function
+	asm         map[string][]string
 }
 
-func GenerateAsm(prog parser.Function) string {
+func GenerateAsm(fn parser.Function) string {
 	c := Compiler{
 		ifElseCount: 0,
-		asm:         "",
+		asm:         map[string][]string{},
 	}
 
-	c.emitInstruction("section .text")
-	c.emitInstruction("global _main")
-	c.emitInstruction("_main:")
+	c.instruction("section .text")
+	c.instruction(fmt.Sprintf("global %s", fn.Name))
+	c.currentFn = fn
 
-	c.emitInstruction("  ; prologue")
-	c.emitInstruction("  push rbp")
-	c.emitInstruction("  mov rbp, rsp")
-	c.emitInstruction(fmt.Sprintf("  sub rsp, %d", prog.StackSize)) // TODO
-	c.emitInstruction("")
+	c.labelInstruction(fn.Name, "  ; prologue")
+	c.labelInstruction(fn.Name, "  push rbp")
+	c.labelInstruction(fn.Name, "  mov rbp, rsp")
+	c.labelInstruction(fn.Name, fmt.Sprintf("  sub rsp, %d", fn.StackSize))
 
-	for _, node := range prog.Body {
+	for _, node := range fn.Body.Statements {
 		c.generate(node)
 
-		c.emitInstruction("  pop rax")
+		//c.labelInstruction(c.currentFn.Name, "  pop rax")
 	}
 
-	c.emitInstruction(".L.return:")
-	c.emitInstruction("  mov rsp, rbp")
-	c.emitInstruction("  pop rbp")
-	c.emitInstruction("  ret")
-	return c.asm
-}
-
-func (c *Compiler) emitInstruction(instruction string) {
-	c.asm += instruction + "\n"
+	c.labelInstruction(fn.Name, fmt.Sprintf(".L.return.%s:", fn.Name))
+	c.labelInstruction(fn.Name, "  mov rsp, rbp")
+	c.labelInstruction(fn.Name, "  pop rbp")
+	c.labelInstruction(fn.Name, "  ret")
+	return c.buildAsm()
 }
 
 func (c *Compiler) generate(node ast.Node) {
@@ -50,6 +46,10 @@ func (c *Compiler) generate(node ast.Node) {
 		c.generateVarAssign(node.(*ast.VarStatement))
 	case *ast.ReturnStatement:
 		c.generateReturnStatement(node.(*ast.ReturnStatement))
+	case *ast.IfElseStatement:
+		c.generateIfElseStatement(node.(*ast.IfElseStatement))
+	case *ast.BlockStatement:
+		c.generateBlockStatement(node.(*ast.BlockStatement))
 	case *ast.ExprStatement:
 		c.generateExprStatement(node.(*ast.ExprStatement))
 	case *ast.NumberExpr:
@@ -60,14 +60,14 @@ func (c *Compiler) generate(node ast.Node) {
 		c.generateInfixExpr(node.(*ast.InfixExpr))
 	case *ast.IdentifierExpr:
 		c.generateIdentifierExpr(node.(*ast.IdentifierExpr))
-	case *ast.BlockStatement:
-		c.generateBlockStatement(node.(*ast.BlockStatement))
-	case *ast.IfElseStatement:
-		c.generateIfElseStatement(node.(*ast.IfElseStatement))
+	case *ast.CallExpr:
+		c.generateCallExpr(node.(*ast.CallExpr))
+	case *ast.FunStatement:
+		c.generateFunStatement(node.(*ast.FunStatement))
 	default:
 		panic("TODO")
 	}
-	c.emitInstruction("  ;-----")
+	c.labelInstruction(c.currentFn.Name, "  ;----- " + c.currentFn.Name)
 }
 
 func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
@@ -75,16 +75,19 @@ func (c *Compiler) generateVarAssign(stmt *ast.VarStatement) {
 
 	c.generate(stmt.Initializer)
 
-	c.emitInstruction("  pop rdi")
-	c.emitInstruction("  pop rax")
-	c.emitInstruction("  mov [rax], rdi")
-	c.emitInstruction("  push rdi")
+	c.labelInstruction(c.currentFn.Name, "  pop rdi")
+	c.labelInstruction(c.currentFn.Name, "  pop rax")
+	c.labelInstruction(c.currentFn.Name, "  mov [rax], rdi")
+	c.labelInstruction(c.currentFn.Name, "  push rdi")
 }
 
 func (c *Compiler) generateReturnStatement(stmt *ast.ReturnStatement) {
-	c.generate(stmt.Value) // TODO Check for null
-	c.emitInstruction("  pop rax")
-	c.emitInstruction("  jmp .L.return")
+	c.generate(stmt.Value) // TODO Return null ???
+	c.labelInstruction(c.currentFn.Name, "  pop rax")
+	c.labelInstruction(
+		c.currentFn.Name,
+		fmt.Sprintf("  jmp .L.return.%s", c.currentFn.Name),
+	)
 }
 
 func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
@@ -92,29 +95,29 @@ func (c *Compiler) generateExprStatement(statement *ast.ExprStatement) {
 }
 
 func (c *Compiler) generateNumber(number *ast.NumberExpr) {
-	c.emitInstruction(fmt.Sprintf("  push %d\n", int(number.Value))) // TODO Float
+	c.labelInstruction(
+		c.currentFn.Name,
+		fmt.Sprintf("  push %d\n", int(number.Value)),
+	) // TODO Float
 }
 
 func (c *Compiler) generatePrefixExpr(expr *ast.PrefixExpr) {
 	c.generate(expr.Right)
-
-	c.emitInstruction("  pop rax")
-
+	c.labelInstruction(c.currentFn.Name, "  pop rax")
 	c.generateUnaryOperator(expr.Operator)
-
-	c.emitInstruction("  push rax")
+	c.labelInstruction(c.currentFn.Name, "  push rax")
 }
 
 func (c *Compiler) generateInfixExpr(expr *ast.InfixExpr) {
 	c.generate(expr.Left)
 	c.generate(expr.Right)
 
-	c.emitInstruction("  pop rdi")
-	c.emitInstruction("  pop rax")
+	c.labelInstruction(c.currentFn.Name, "  pop rdi")
+	c.labelInstruction(c.currentFn.Name, "  pop rax")
 
 	c.generateBinaryOperator(expr.Operator)
 
-	c.emitInstruction("  push rax")
+	c.labelInstruction(c.currentFn.Name, "  push rax")
 }
 
 func (c *Compiler) generateBlockStatement(expr *ast.BlockStatement) {
@@ -123,59 +126,81 @@ func (c *Compiler) generateBlockStatement(expr *ast.BlockStatement) {
 	}
 }
 
+func (c *Compiler) generateFunStatement(stmt *ast.FunStatement) {
+	oldFn := c.currentFn
+	c.currentFn = parser.Function{
+		Name:      stmt.Name,
+		Body:      stmt.Body,
+		StackSize: 0, // TODO
+	}
+	c.generate(stmt.Body)
+
+	// Function epilogue
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf(".L.return.%s:", c.currentFn.Name))
+
+	c.labelInstruction(stmt.Name, "  ret")
+
+	c.currentFn = oldFn
+}
+
 func (c *Compiler) generateIdentifierExpr(expr *ast.IdentifierExpr) {
 	c.generateOffset(expr)
-	c.emitInstruction("  pop rax")
-	c.emitInstruction("  mov rax, [rax]")
-	c.emitInstruction("  push rax")
+	c.labelInstruction(c.currentFn.Name, "  pop rax")
+	c.labelInstruction(c.currentFn.Name, "  mov rax, [rax]")
+	c.labelInstruction(c.currentFn.Name, "  push rax")
+}
+
+func (c *Compiler) generateCallExpr(expr *ast.CallExpr) {
+	c.labelInstruction(c.currentFn.Name, "  mov rax, 0")
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf("  call %s", expr.Function))
+	c.labelInstruction(c.currentFn.Name, "  push rax")
 }
 
 func (c *Compiler) generateIfElseStatement(stmt *ast.IfElseStatement) {
 	c.generate(stmt.Condition)
-	c.emitInstruction("  cmp rax, 0")
+	c.labelInstruction(c.currentFn.Name, "  cmp rax, 0")
 
 	c.ifElseCount += 1
 
-	c.emitInstruction(fmt.Sprintf("  je .L.else.%d", c.ifElseCount))
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf("  je .L.else.%d", c.ifElseCount))
 	c.generate(stmt.Then)
-	c.emitInstruction(fmt.Sprintf("  jmp .L.end.%d", c.ifElseCount))
-	c.emitInstruction(fmt.Sprintf(".L.else.%d:", c.ifElseCount))
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf("  jmp .L.end.%d", c.ifElseCount))
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf(".L.else.%d:", c.ifElseCount))
 	if stmt.Else != nil {
 		c.generate(stmt.Else)
 	}
-	c.emitInstruction(fmt.Sprintf(".L.end.%d:", c.ifElseCount))
+	c.labelInstruction(c.currentFn.Name, fmt.Sprintf(".L.end.%d:", c.ifElseCount))
 }
 
 func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 	switch operator {
 	case ast.Add:
-		c.emitInstruction("  add rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  add rax, rdi")
 	case ast.Subtract:
-		c.emitInstruction("  sub rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  sub rax, rdi")
 	case ast.Multiply:
-		c.emitInstruction("  imul rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  imul rax, rdi")
 	case ast.Divide:
-		c.emitInstruction("  cqo")
-		c.emitInstruction("  idiv rdi")
-		c.emitInstruction("  mov rax, rdx") // TODO Works?
+		c.labelInstruction(c.currentFn.Name, "  cqo")
+		c.labelInstruction(c.currentFn.Name, "  idiv rdi")
 	case ast.EqualEqual:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  sete al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  sete al")
 	case ast.BangEqual:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  setne al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  setne al")
 	case ast.LessThanEqual:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  setle al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  setle al")
 	case ast.GreaterThanEqual:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  setge al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  setge al")
 	case ast.Greater:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  setg al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  setg al")
 	case ast.Less:
-		c.emitInstruction("  cmp rax, rdi")
-		c.emitInstruction("  setl al")
+		c.labelInstruction(c.currentFn.Name, "  cmp rax, rdi")
+		c.labelInstruction(c.currentFn.Name, "  setl al")
 	default:
 		panic("TODO")
 	}
@@ -184,7 +209,7 @@ func (c *Compiler) generateBinaryOperator(operator ast.BinaryOperator) {
 func (c *Compiler) generateUnaryOperator(operator ast.UnaryOperator) {
 	switch operator {
 	case ast.Negate:
-		c.emitInstruction("  neg rax")
+		c.labelInstruction(c.currentFn.Name, "  neg rax")
 	case ast.Not:
 		panic("TODO")
 	default:
@@ -197,18 +222,41 @@ func (c *Compiler) generateOffset(node ast.Node) {
 	if _, ok := node.(*ast.VarStatement); ok {
 		offset := node.(*ast.VarStatement).Offset
 
-		c.emitInstruction("  mov rax, rbp")
-		c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
-		c.emitInstruction("  push rax")
+		c.labelInstruction(c.currentFn.Name, "  mov rax, rbp")
+		c.labelInstruction(c.currentFn.Name, fmt.Sprintf("  sub rax, %d", offset))
+		c.labelInstruction(c.currentFn.Name, "  push rax")
 		return
 	}
 	if _, ok := node.(*ast.IdentifierExpr); ok {
 		offset := node.(*ast.IdentifierExpr).Offset
 
-		c.emitInstruction("  mov rax, rbp")
-		c.emitInstruction(fmt.Sprintf("  sub rax, %d", offset))
-		c.emitInstruction("  push rax")
+		c.labelInstruction(c.currentFn.Name, "  mov rax, rbp")
+		c.labelInstruction(c.currentFn.Name, fmt.Sprintf("  sub rax, %d", offset))
+		c.labelInstruction(c.currentFn.Name, "  push rax")
 		return
 	}
 	panic("TODO")
+}
+
+func (c *Compiler) buildAsm() string {
+	var asm string
+
+	for label, items := range c.asm {
+		if label != "" {
+			asm += label + ":" + "\n"
+		}
+		for _, item := range items {
+			asm += item + "\n"
+		}
+	}
+
+	return asm
+}
+
+func (c *Compiler) instruction(instr string) {
+	c.asm[""] = append(c.asm[""], instr)
+}
+
+func (c *Compiler) labelInstruction(label string, instr string) {
+	c.asm[label] = append(c.asm[label], instr)
 }

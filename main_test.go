@@ -27,7 +27,7 @@ func getStatusCode(t *testing.T) int {
 			t.Errorf("cmd.Wait: %v", err)
 		}
 	}
-	panic("TODO")
+	panic("Failed to run ./temp")
 }
 
 func runTestCases(t *testing.T, tests []TestCase) {
@@ -73,7 +73,15 @@ func TestMultiplication(t *testing.T) {
 	runTestCases(t, tests)
 }
 
-// TODO Test division
+func TestDivision(t *testing.T) {
+	var tests = []TestCase{
+		{"return 10 / 2;", 5},
+		{"return 5 / 5;", 1},
+		{"return 5 / 0;", -1},
+	}
+
+	runTestCases(t, tests)
+}
 
 func TestLogicalOperators(t *testing.T) {
 	var tests = []TestCase{
@@ -112,6 +120,16 @@ func TestIfElse(t *testing.T) {
 		{"var x = 5; if (5 < 10) { return 5; }", 5},
 		// Test for multiple if statements
 		{"if (5 < 10) { } if (10 > 5) { return 3; }", 3},
+	}
+
+	runTestCases(t, tests)
+}
+
+func TestFunctionCall(t *testing.T) {
+	var tests = []TestCase{
+		{"fn ret5() { return 5; } return ret5();", 5},
+		{"var x = 10; fn retX() { return x; } return retX();", 10},
+		{"fn ret3() { return 3; } fn ret5() { return 5; } return ret3() + ret5();", 8},
 	}
 
 	runTestCases(t, tests)

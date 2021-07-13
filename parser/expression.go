@@ -69,8 +69,9 @@ func (p *Parser) parseInfixExpr(token tokenizer.Token, left ast.Expression) ast.
 	return expr
 }
 
-func (p *Parser) parseCallExpression(_ tokenizer.Token, function ast.Expression) ast.Expression {
-	exp := &ast.CallExpr{Function: function}
+func (p *Parser) parseCallExpression(token tokenizer.Token, identExpr ast.Expression) ast.Expression {
+	ident := identExpr.(*ast.IdentifierExpr)
+	exp := &ast.CallExpr{Function: ident.Value}
 	exp.Args = p.parseExpressionList(tokenizer.RightParen)
 	return exp
 }

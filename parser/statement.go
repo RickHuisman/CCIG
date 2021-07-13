@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Parser) parseVarStatement() ast.Statement {
-	name := p.expect(tokenizer.Identifier, "Expect identifier.").Source // TODO Error message
+	name := p.expect(tokenizer.Identifier, "Expect identifier.").Source
 
 	// Initialize let with null
 	var initializer ast.Expression = &ast.NullExpr{}
@@ -28,15 +28,14 @@ func (p *Parser) parseVarStatement() ast.Statement {
 func (p *Parser) parseFunction() ast.Statement {
 	lit := &ast.FunStatement{}
 
-	lit.Name = p.expect(tokenizer.Identifier, "").Source // TODO Message
+	lit.Name = p.expect(tokenizer.Identifier, "Expect identifier after fn keyword.").Source
 
-	p.expect(tokenizer.LeftParen, "") // TODO Message
+	p.expect(tokenizer.LeftParen, "Expect '(' after function identifier.")
 
 	lit.Params = p.parseFunctionParameters()
 
-	p.expect(tokenizer.LeftBrace, "") // TODO Message
+	p.expect(tokenizer.LeftBrace, "Expect '{' after function block.")
 	lit.Body = p.parseBlockStatement()
-	p.expect(tokenizer.RightBrace, "") // TODO Message
 
 	return lit
 }
@@ -73,7 +72,7 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		}
 	}
 
-	p.expect(tokenizer.RightBrace, "TODO") // TODO
+	p.expect(tokenizer.RightBrace, "Expect '}' after block statement.")
 
 	return &ast.BlockStatement{Statements: statements}
 }
@@ -83,7 +82,7 @@ func (p *Parser) parseReturn() ast.Statement {
 		Value: p.parseExpression(None),
 	}
 
-	p.expect(tokenizer.Semicolon, "") // TODO Message
+	p.expect(tokenizer.Semicolon, "Expect ';' after return statement.")
 
 	return stmt
 }
@@ -95,11 +94,11 @@ func (p *Parser) parseIf() ast.Statement {
 	}
 	p.expect(tokenizer.RightParen, "Expect ')' after if condition.")
 
-	p.expect(tokenizer.LeftBrace, "TODO") // TODO
+	p.expect(tokenizer.LeftBrace, "Expect '{' before block statement.")
 	stmt.Then = p.parseBlockStatement()
 
 	if p.match(tokenizer.Else) {
-		p.expect(tokenizer.LeftBrace, "TODO") // TODO
+		p.expect(tokenizer.LeftBrace, "Expect '{' before block statement.")
 
 		stmt.Else = p.parseBlockStatement()
 	}

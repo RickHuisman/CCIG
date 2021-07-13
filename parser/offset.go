@@ -8,7 +8,7 @@ type OffsetGenerator struct {
 	knownVars     []*ast.VarStatement
 }
 
-func assignOffsets(nodes []ast.Node) int {
+func assignOffsets(nodes []ast.Statement) int {
 	g := OffsetGenerator{
 		currentOffset: 0,
 		offsetWidth:   8,
@@ -39,6 +39,9 @@ func (g *OffsetGenerator) assignOffset(node ast.Node) {
 		for _, stmt := range b.Statements {
 			g.assignOffset(stmt)
 		}
+	case *ast.FunStatement:
+		f := node.(*ast.FunStatement)
+		g.assignOffset(f.Body)
 	case *ast.ExprStatement:
 		e := node.(*ast.ExprStatement)
 		g.assignOffset(e.Value)
@@ -49,6 +52,8 @@ func (g *OffsetGenerator) assignOffset(node ast.Node) {
 		i := node.(*ast.InfixExpr)
 		g.assignOffset(i.Left)
 		g.assignOffset(i.Right)
+	case *ast.CallExpr:
+		return
 	case *ast.IdentifierExpr:
 		s := node.(*ast.IdentifierExpr)
 		s.Offset = findVar(g.knownVars, s.Value).Offset
